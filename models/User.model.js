@@ -5,7 +5,7 @@ const userSchema = new Schema(
   {
     email: {
       type: String,
-      unique: [true, "Debes de usar otro correo"],
+      unique: true, //[true,"Debes de usar otro correo"]
       required: true,
       match: [/^\S+@\S+\.\S+$/, "Please use a valid email address."],
       trim: true,
@@ -14,6 +14,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    //ES MUY IMPORTANTE
     role: {
       type: String,
       enum: ["Admin", "User"],
@@ -34,6 +35,7 @@ const userSchema = new Schema(
     },
   },
   {
+    // this second object adds extra properties: `createdAt` and `updatedAt`
     timestamps: true,
   }
 );

@@ -1,12 +1,13 @@
 const router = require("express").Router();
+//importar el controlador 
+const {signupProcess,loginProcess,logoutProcess} = require("../controllers/auth.controller")
+//middelwares
 
-const { signupProcess, loginProcess, logoutProcess } = require('../controllers/auth.controller');
+router.post("/signup", signupProcess);
 
-router.post("/signup" , signupProcess);
+//login Logout
+router.post("/login",loginProcess);
 
-// login logout
-router.post('login',loginProcess);
-
-router.get('/logout', logoutProcess)
-// .-
+router.get("/logout",logoutProcess);
+//.-
 module.exports = router;

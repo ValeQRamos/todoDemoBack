@@ -1,36 +1,42 @@
-// importar el modelo que voy a utilizar v1
+//importa el modelo que voy a utilizar v1
 const User = require("../models/User.model");
 const mongoose = require("mongoose");
-// Para el password
+//Para el password
 const bcryptjs = require("bcryptjs");
-const {clearRes, createJWT} = require('../utils/utils')
+const { clearRes, createJWT } = require("../utils/utils")
 
 // solo estas 3
-// login, signup, logout
+// login, signup logout
 
-// api mandamos data en post
-// get solo llamamos data
+//api mandamos data en post
+//get solo llamos data
 
-// signup controller
+//signup controller
+
 exports.signupProcess = (req, res, next) => {
-  //params : id - query ? - frontend body
-  // vamos a sacar el rol
+  //params :id
+  //query ?
+  // frontend al back  body
+  // vamos a sacar el role
   const { role, email, password, confirmPassword, ...restUser } = req.body;
-  // validar campos vacios
+  //validar campos vacios
   if (!email.length || !password.length || !confirmPassword.length)
     return res
       .status(400)
       .json({ errorMessage: "No debes mandar campos vacios!" });
-  // password coincide
-  if (password !== confirmPassword)
-    return restUser
+  //Validar si el password >8 o con una regla regex
+
+  //password coincide!
+  if (password != confirmPassword)
+    return res
       .status(400)
-      .json({ errorMessage: "Las contrasenas no son iguales!" });
-  //  validar que el email existe 1.1
-  // {email:email}
+      .json({ errorMessage: "La contraseñas no son iguales!" });
+
+  //validar email existe! 1.1
+  //{email:email} > {email:dylan.tc...}
   User.findOne({ email })
     .then((found) => {
-      // validar emial 1.2
+      //validar email 1.2
       if (found)
         return res
           .status(400)
@@ -41,35 +47,57 @@ exports.signupProcess = (req, res, next) => {
           .genSalt(10)
           .then((salt) => bcryptjs.hash(password, salt))
           .then((hashedPassword) => {
-            // crearemos al nuevo usario
+            //crearemos al nuevo usuario
             return User.create({
               email,
               password: hashedPassword,
               ...restUser,
             });
           })
-          // then contiene al user ya con password hashed y guardado en la db
+          //then contiene al user ya con passwor hashed y guarado en la db
+          //{…}
           .then((user) => {
-            // regresamos al usuario para que entre a la pagina y ademas creamos su token de acceso
+            //regreamos al usuario para que entre a la pagina y ademas creamos su token de acceso
             const [header, payload, signature] = createJWT(user);
 
-            // vamos a guardar estos datos con las cookies
-            // res.cookie('keyComoSeVaAGuardar'," elDatoQueVoyAlmacenar", { opciones } )
+            //vamos a guardar estos datos en las cookies
+            //res.cookie("key_como_se_va_guardar", "dato_que_voy_alamcernar",{opciones})
             res.cookie("headload", `${header}.${payload}`, {
               maxAge: 1000 * 60 * 30,
               httpOnly: true,
               sameSite: "strict",
               secure: false,
             });
+
             res.cookie("signature", signature, {
               maxAge: 1000 * 60 * 30,
               httpOnly: true,
               sameSite: "strict",
               secure: false,
             });
-            // vamos a limpiar la repsues de mongoose convirtiendo el BSON a objeto y elimintar data basura
+            /**
+             *  user={
+             *  firstName:…,
+             *  lastName:…,
+             *  password:56f12535612f536f12,
+             * }
+             *  toObject()
+             *  {} Objecto || JSON
+             *  {} BSON =>toObject() => Objecto ..., {perro,gato}, delete user.password
+             */
+
+            /**
+             *  respues en frontend
+             *  res.data = {
+             *  result:{
+             *      user:{…},
+             *      listFriends:[{…},{…}]
+             *  }
+             * }
+             */
+            //vamos a limpar la respuesta de mongoose conviertiendo el BSON a objeto y eliminar data basura
             const newUser = clearRes(user.toObject());
-            res.status(201).json({ user: newUser });
+            res.status(201).json({ user: newUser }); //{data:{ user:{} } }
           })
       );
     })
@@ -79,63 +107,74 @@ exports.signupProcess = (req, res, next) => {
       }
       if (error.code === 11000) {
         return res.status(400).json({
-          errorMessage: "el correo electronico ya esta en uso.",
-        });
-      }
-    });
-};
-
-exports.loginProcess = (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email || !password || !email.length || !password.length)
-    return res
-      .status(400)
-      .json({ errorMessage: "No debes mandar campos vacios" });
-  //validar la contraseña que contenga 8 caracteres o REDEX
-  User.findOne({ email })
-    .then((user) => {
-      if (!user)
-        return res.status(400).json({ errorMessage: "Credenciales invalidas" });
-      //validar que la contraseña sea correcta
-      return bcryptjs.compare(password, user.password).then((match) => {
-        if (!match)
-          return res
-            .status(400)
-            .json({ errorMessage: "Credenciales invalidas" });
-        //crear nuestro jwt
-        const [header, payload, signature] = createJWT(user);
-        res.cookie("headload", `${header}.${payload}`, {
-          maxAge: 1000 * 60 * 30,
-          httpOnly: true,
-          sameSite: "strict",
-          secure: false,
-        });
-        res.cookie("signature", signature, {
-          maxAge: 1000 * 60 * 30,
-          httpOnly: true,
-          sameSite: "strict",
-          secure: false,
-        });
-        //vamos a limpiar el response del usuario
-        const newUser = clearRes(user.toObject());
-        res.status(200).json({ user: newUser });
-      });
-    })
-    .catch((error) => {
-      if (error instanceof mongoose.Error.ValidationError) {
-        return res.status(400).json({ errorMessage: error.message });
-      }
-      if (error.code === 11000) {
-        return res.status(400).json({
-          errorMessage: "el correo electronico ya esta en uso.",
+          errorMessage: "El correo electronico ya esta en uso",
         });
       }
       return res.status(500).json({ errorMessage: error.message });
     });
 };
 
-exports.logoutProcess = (req, res, next) => {
-  res.clearCookie('headload')
-  res.clearCookie('signature')
-  res.status(200).json({successMessage:'Saliste todo chido!!!, regresa pronto :D'})
+
+exports.loginProcess = (req, res, next) => {
+    const {email, password} = req.body
+
+    if(!email || !password || !email.length || !password.length ) return res
+    .status(400)
+    .json({ errorMessage: "No debes mandar campos vacios!" }); 
+
+    //validar el password > 8 o colocar el regex
+
+    User.findOne({email})
+    .then(user=>{
+        //ver si el correo existe
+        if(!user)return res
+        .status(400)
+        .json({ errorMessage: "Credenciales invalidas!" }); 
+
+        //ver si la contraseña es correcta
+        return bcryptjs.compare(password,user.password)
+            .then(match=>{
+                if(!match) return res
+                .status(400)
+                .json({ errorMessage: "Credenciales invalidas!" }); 
+
+                //crear nuestro jwt 
+                const [header,payload,signature] = createJWT(user)
+
+                res.cookie("headload", `${header}.${payload}`, {
+                    maxAge: 1000 * 60 * 30,
+                    httpOnly: true,
+                    sameSite: "strict",
+                    secure: false,
+                  });
+      
+                  res.cookie("signature", signature, {
+                    maxAge: 1000 * 60 * 30,
+                    httpOnly: true,
+                    sameSite: "strict",
+                    secure: false,
+                  });
+                //vamos  limpiar el responde del usuario
+                  const newUser = clearRes( user.toObject() );
+                  res.status(200).json({user:newUser})
+            })
+    })
+    .catch((error) => {
+        if (error instanceof mongoose.Error.ValidationError) {
+          return res.status(400).json({ errorMessage: error.message });
+        }
+        if (error.code === 11000) {
+          return res.status(400).json({
+            errorMessage: "El correo electronico ya esta en uso",
+          });
+        }
+        return res.status(500).json({ errorMessage: error.message });
+      });
+}; 
+
+
+exports.logoutProcess = (req,res,next)=>{
+    res.clearCookie('headload');
+    res.clearCookie('signature')
+    res.status(200).json({successMessage:"Saliste todo chido!!! regresa pronto :D "})
 }
