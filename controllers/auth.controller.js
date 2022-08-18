@@ -5,14 +5,6 @@ const mongoose = require("mongoose");
 const bcryptjs = require("bcryptjs");
 const { clearRes, createJWT } = require("../utils/utils")
 
-// solo estas 3
-// login, signup logout
-
-//api mandamos data en post
-//get solo llamos data
-
-//signup controller
-
 exports.signupProcess = (req, res, next) => {
   //params :id
   //query ?
