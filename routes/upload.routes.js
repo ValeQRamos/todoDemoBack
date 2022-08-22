@@ -8,9 +8,9 @@ const uploadCloud = require('../helpers/cloudinary')
 const {verifyToken}= require('../middleware')
 
 // multiples
-router.post('/uploads', verifyToken ,uploadCloud.array('images', 3), uploadProcess)
+router.post('/uploads',uploadCloud.array('images', 3), uploadProcess)
 // una sola
-router.post('/single',verifyToken ,uploadCloud.single(('images'), uploadProcess))
+router.post('/single',uploadCloud.single(('images'), uploadProcess))
 
 router.delete('/delete-image/:name', deleteImage)
 
